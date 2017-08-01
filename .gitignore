@@ -24,3 +24,6 @@ erl_crash.dump
 
 # Data
 data
+
+# OS
+.DS_Store

@@ -1,20 +1,77 @@
 defmodule AEA do
 
-  def init(genes, term, iterations) do
+  use GenServer
+
+  # Client API
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, :ok, opts)
+  end
+
+  def put(pid, mtilda_gt) do
+    GenServer.cast(pid, {:put, mtilda_gt})
+  end
+
+  def get(pid) do
+    GenServer.call(pid, :get)
+  end
+
+  def go(pid, genes, term, iterations) do
+    GenServer.cast(pid, {:go, genes, term, iterations})
+  end
+
+  # Server Callbacks
+  def init(:ok) do
+    {:ok, []}
+  end
+
+  def handle_cast({:put, mtilda_gt}, state) do
+    {:noreply, [ mtilda_gt | state ]}
+  end
+
+  def handle_cast({:go, genes, term, iterations}, state) do
 
     {m_gt, m_g, m_t} = determine_ms(genes, term)
 
     gs = AEA.Helpers.get_ets_keys_lazy(:genes_to_terms) |> Enum.to_list
     ts = AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list
 
-    mtilda_gts = multiple_randomize(gs, ts, m_g, m_t, iterations, [])
+    Enum.each 1..iterations, fn(_) ->
+      {:ok, pid} = AEA.Randomize.Worker.start_link
+      AEA.Randomize.Worker.randomize pid, self(), gs, ts, m_g, m_t
+    end
 
-    p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
 
-    {m_gt, mtilda_gts, p}
+    {:noreply, state }
   end
-  def init(genes, term) do
-    init(genes, term, 10_000)
+
+  def handle_call(:get, _from, state) do
+    {:reply, state, state }
+  end
+
+
+  # Helpers
+
+
+  def prepare() do
+
+    IO.puts "Building hierarchy..."
+    AEA.OBO.start
+
+    IO.puts "Building maps"
+    AEA.GMT.start
+
+    IO.puts "Building lists"
+    AEA.Cache.start_link
+
+#    AEA.Cache.write :genes, (AEA.Helpers.get_ets_keys_lazy(:genes_to_terms) |> Enum.to_list)
+#    AEA.Cache.write :terms, (AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list)
+
+#    mtilda_gts = multiple_randomize(m_g, m_t, iterations, [])
+#
+#    p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
+#
+#    {m_gt, mtilda_gts, p}
   end
 
 
@@ -36,8 +93,8 @@ defmodule AEA do
   end
 
   def randomize(gs, ts, m_g, m_t) do
-    shuffled_genes = gs |> Enum.shuffle
-    shuffled_terms = ts |> Enum.shuffle
+    shuffled_genes = gs |> Enum.shuffle # shuffle(:genes) # AEA.Cache.read(:genes) |> Enum.shuffle
+    shuffled_terms = ts |> Enum.shuffle # shuffle(:terms) # AEA.Cache.read(:terms) |> Enum.shuffle
 
     genes = AEA.Helpers.get_keys_with_closest_number_of_values :genes_to_terms, m_g, shuffled_genes, 0, []
     terms = AEA.Helpers.get_keys_with_closest_number_of_values :terms_to_genes, m_t, shuffled_terms, 0, []
@@ -45,14 +102,14 @@ defmodule AEA do
     {genes, terms}
   end
 
-  def multiple_randomize(gs, ts, m_g, m_t, 0, mtilda_gts) do
-      mtilda_gts
-  end
-  def multiple_randomize(gs, ts, m_g, m_t, n, mtilda_gts) when n > 0 do
-      {g, t} = randomize(gs, ts, m_g, m_t)
-      mtilda_gt = determine_m_gt(g, t)
-      multiple_randomize(gs, ts, m_g, m_t, n - 1, [mtilda_gt | mtilda_gts])
-  end
+#  def multiple_randomize(m_g, m_t, 0, mtilda_gts) do
+#      mtilda_gts
+#  end
+#  def multiple_randomize(m_g, m_t, n, mtilda_gts) when n > 0 do
+#      {g, t} = randomize(m_g, m_t)
+#      mtilda_gt = determine_m_gt(g, t)
+#      multiple_randomize(m_g, m_t, n - 1, [mtilda_gt | mtilda_gts])
+#  end
 
   def determine_m_gt(genes, terms) do
     gene_sets = terms |> get_genes_for_terms
@@ -77,7 +134,8 @@ defmodule AEA do
             [{ term, terms }] ->
                 [ term | terms ]
             _ ->
-                IO.puts "Parsing error with #{inspect term}"
+                IO.inspect "Parsing error with #{inspect term}"
+                []
 
         end
   end

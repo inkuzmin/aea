@@ -42,6 +42,13 @@ defmodule AEA.Helpers do
        end
      end
 
+     def measure(function) do
+       function
+       |> :timer.tc
+       |> elem(0)
+       |> Kernel./(1_000_000)
+     end
+
 
     @doc """
     One of the most important functions.
