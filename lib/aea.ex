@@ -132,12 +132,34 @@ defmodule AEA do
   def get_terms_of_branch(term) do
         case :ets.lookup(:terms_to_terms, term) do
             [{ term, terms }] ->
-                [ term | terms ]
+                terms
             _ ->
                 IO.inspect "Parsing error with #{inspect term}"
-                []
-
+                [ ]
         end
   end
 
+  def get_all_terms_of_branch([]) do
+    []
+  end
+  def get_all_terms_of_branch([t | ts]) do
+    [ t ] ++ get_all_terms_of_branch(get_terms_of_branch(t)) ++ get_all_terms_of_branch(ts)
+  end
+
+  def make_parent_to_children_table() do
+    terms = AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list
+
+    Enum.map terms, fn(term) ->
+      [term | get_terms_of_branch(term)]
+    end
+
+  end
+
+  def make_parent_to_progeny_table() do
+    terms = AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list
+
+    Enum.map terms, fn(term) ->
+      get_all_terms_of_branch([term]) |> List.flatten |> Enum.uniq
+    end
+  end
 end

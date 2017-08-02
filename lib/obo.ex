@@ -51,8 +51,8 @@ defmodule AEA.OBO do
   end
   def save_rel(id, parents, :part_of) do
     Enum.each parents, fn({_,parent}) ->
-      case Regex.run(~r{(?<part_of>)GO:\d+}, parent) do
-        [ parent_id, _ ] -> upsert parent_id, id # save
+      case Regex.run(~r{part_of (GO:\d+)}, parent) do
+        [ _, parent_id ] -> upsert parent_id, id # save
         _ -> IO.puts "Unknown id"
       end
     end
