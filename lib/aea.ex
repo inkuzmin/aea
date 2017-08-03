@@ -155,11 +155,17 @@ defmodule AEA do
 
   end
 
+  def in_GMT(list, terms) do
+    Enum.filter list, fn(term) ->
+        Enum.member? terms, term
+    end
+  end
+
   def make_parent_to_progeny_table() do
     terms = AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list
 
     Enum.map terms, fn(term) ->
-      get_all_terms_of_branch([term]) |> List.flatten |> Enum.uniq
+      get_all_terms_of_branch([term]) |> List.flatten |> Enum.uniq |> in_GMT(terms)
     end
   end
 end
