@@ -77,7 +77,7 @@ defmodule AEA do
 
 
   def determine_ms(genes, term) do
-      terms = term |> get_terms_of_branch
+      terms = term |> get_terms_of_branch |> List.flatten
 
       m_gt = determine_m_gt genes, terms
       m_t = terms |> get_genes_for_terms |> List.flatten |> length
