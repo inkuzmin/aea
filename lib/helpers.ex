@@ -46,6 +46,10 @@ defmodule AEA.Helpers do
         :ets.insert name, {key, values}
       end
     end
+    def list_to_ets(list, name) when is_atom(name) do
+      create_table name
+      :ets.insert name, {:all, list}
+    end
     def tsf_to_table(filename) do
       filename |> Path.expand |> File.stream! |> parse_tsf
     end

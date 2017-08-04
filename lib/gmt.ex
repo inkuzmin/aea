@@ -4,7 +4,7 @@ defmodule AEA.GMT do
     @cache_ts "./cache/terms_to_genes.csv"
     @cache_gs "./cache/genes_to_terms.csv"
 
-    def start_from_cashe(cache_ts \\ @cache_ts, cache_gs \\ @cache_gs) do
+    def start_from_cache(cache_ts \\ @cache_ts, cache_gs \\ @cache_gs) do
        ts = case File.exists? cache_ts do
          true -> AEA.Helpers.tsf_to_table(cache_ts) |> AEA.Helpers.table_to_map
          false -> :error

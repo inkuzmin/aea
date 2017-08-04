@@ -3,7 +3,7 @@ defmodule AEA.OBO do
   @filename "./data/go.obo"
   @cache "./cache/terms_to_terms.csv"
 
-  def start_from_cashe(cache \\ @cache) do
+  def start_from_cache(cache \\ @cache) do
      case File.exists? cache do
        true -> AEA.Helpers.tsf_to_table(cache) |> AEA.Helpers.table_to_map
        false -> :error

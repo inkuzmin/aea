@@ -54,19 +54,26 @@ defmodule AEA do
 
 
   def bootstrap() do
+    IO.puts "Initializing data"
+    {terms_to_genes, genes_to_terms, terms, genes} = AEA.GMT.start_from_cache
+#    terms_to_children = AEA.OBO.start_from_cache
+    terms_to_progeny = AEA.Hierarchy.start_from_cache
 
-    IO.puts "Building hierarchy..."
-    AEA.OBO.start
+    IO.puts "Startng in-memory storages..."
+    terms_to_genes |> AEA.Helpers.map_to_table |> AEA.Helpers.table_to_ets(:terms_to_genes)
+    genes_to_terms |> AEA.Helpers.map_to_table |> AEA.Helpers.table_to_ets(:genes_to_terms)
+    terms |> AEA.Helpers.list_to_ets(:terms)
+    genes |> AEA.Helpers.list_to_ets(:genes)
+    terms_to_progeny |> AEA.Helpers.map_to_table |> AEA.Helpers.table_to_ets(:terms_to_progeny)
 
-    IO.puts "Building maps"
-    AEA.GMT.start
 
-    IO.puts "Building lists"
-    AEA.Cache.start_link
+
 
 #    p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
 
   end
+
+
 
 
   def determine_ms(genes, term) do
@@ -79,12 +86,6 @@ defmodule AEA do
       {m_gt, m_g, m_t}
   end
 
-  def shuffle(:genes) do
-    AEA.Helpers.get_ets_keys_lazy(:genes_to_terms) |> Enum.to_list |> Enum.shuffle
-  end
-  def shuffle(:terms) do
-    AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list |> Enum.shuffle
-  end
 
   def randomize(gs, ts, m_g, m_t) do
     shuffled_genes = gs |> Enum.shuffle # shuffle(:genes) # AEA.Cache.read(:genes) |> Enum.shuffle
@@ -115,7 +116,7 @@ defmodule AEA do
   end
 
   def get_terms_of_branch(term) do
-    AEA.Helpers.get_values_for_keys(:terms_to_branches, [term])
+    AEA.Helpers.get_values_for_keys(:terms_to_progeny, [term])
   end
 
 
