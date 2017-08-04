@@ -53,7 +53,7 @@ defmodule AEA do
   # Helpers
 
 
-  def prepare() do
+  def bootstrap() do
 
     IO.puts "Building hierarchy..."
     AEA.OBO.start
@@ -64,14 +64,8 @@ defmodule AEA do
     IO.puts "Building lists"
     AEA.Cache.start_link
 
-#    AEA.Cache.write :genes, (AEA.Helpers.get_ets_keys_lazy(:genes_to_terms) |> Enum.to_list)
-#    AEA.Cache.write :terms, (AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list)
-
-#    mtilda_gts = multiple_randomize(m_g, m_t, iterations, [])
-#
 #    p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
-#
-#    {m_gt, mtilda_gts, p}
+
   end
 
 
@@ -102,14 +96,6 @@ defmodule AEA do
     {genes, terms}
   end
 
-#  def multiple_randomize(m_g, m_t, 0, mtilda_gts) do
-#      mtilda_gts
-#  end
-#  def multiple_randomize(m_g, m_t, n, mtilda_gts) when n > 0 do
-#      {g, t} = randomize(m_g, m_t)
-#      mtilda_gt = determine_m_gt(g, t)
-#      multiple_randomize(m_g, m_t, n - 1, [mtilda_gt | mtilda_gts])
-#  end
 
   def determine_m_gt(genes, terms) do
     gene_sets = terms |> get_genes_for_terms
@@ -128,44 +114,9 @@ defmodule AEA do
     AEA.Helpers.get_values_for_keys(:terms_to_genes, terms)
   end
 
-
   def get_terms_of_branch(term) do
-        case :ets.lookup(:terms_to_terms, term) do
-            [{ term, terms }] ->
-                terms
-            _ ->
-                IO.inspect "Parsing error with #{inspect term}"
-                [ ]
-        end
+    AEA.Helpers.get_values_for_keys(:terms_to_branches, [term])
   end
 
-  def get_all_terms_of_branch([]) do
-    []
-  end
-  def get_all_terms_of_branch([t | ts]) do
-    [ t ] ++ get_all_terms_of_branch(get_terms_of_branch(t)) ++ get_all_terms_of_branch(ts)
-  end
 
-  def make_parent_to_children_table() do
-    terms = AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list
-
-    Enum.map terms, fn(term) ->
-      [term | get_terms_of_branch(term)]
-    end
-
-  end
-
-  def in_GMT(list, terms) do
-    Enum.filter list, fn(term) ->
-        Enum.member? terms, term
-    end
-  end
-
-  def make_parent_to_progeny_table() do
-    terms = AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list
-
-    Enum.map terms, fn(term) ->
-      get_all_terms_of_branch([term]) |> List.flatten |> Enum.uniq |> in_GMT(terms)
-    end
-  end
 end

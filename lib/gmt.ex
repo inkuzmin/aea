@@ -1,48 +1,39 @@
 defmodule AEA.GMT do
 
-    def start(:re) do
-      filename |> read_gmt
-    end
-    def start() do
-       _terms_to_genes = :ets.new(:terms_to_genes, [:set, :protected, :named_table])
-       _genes_to_terms = :ets.new(:genes_to_terms, [:set, :protected, :named_table])
-       filename |> read_gmt
+    def start(filename \\ "./data/hsapiens.GO.ENSG.gmt") do
+
+       {ts, gs} = filename |> Path.expand |> File.stream! |> parse
+
+       ts_table = ts |> AEA.Helpers.map_to_table
+       gs_table = gs |> AEA.Helpers.map_to_table
+
+       AEA.Helpers.save_as_csv(ts_table, "./cache/terms_to_genes.csv")
+       AEA.Helpers.save_as_csv(gs_table, "./cache/genes_to_terms.csv")
+
     end
 
-    defp read_gmt(path) do
-      path |> File.stream! |> parse_lines
-    end
-
-    defp parse_lines(lines) do
-      Enum.each(lines, &parse_line/1)
-    end
-
-    def parse_line(line) do
+    def parse(lines) do
+      Enum.reduce(lines, { %{}, %{} }, fn(line, { terms_to_genes, genes_to_terms }) ->
         case line |> String.replace("\n", "") |> String.split("\t", trim: true) do
           [term | [ term_name | genes ] ] ->
-            Enum.each genes, &update_genes_table(&1, term)
-            case :ets.lookup :terms_to_genes, term do
-              [] ->
-                :ets.insert :terms_to_genes, {term, genes}
-              [{_, gs}] ->
-                :ets.insert :terms_to_genes, {term, gs ++ genes}
-            end
+            {
+              add(terms_to_genes, term, genes),
+              Enum.reduce(genes, genes_to_terms, fn(gene, acc) -> add(acc, gene, [term]) end)
+            }
           _ ->
-            :error
+            { terms_to_genes, genes_to_terms }
         end
+      end)
     end
 
-    defp update_genes_table(gene, term) do
-      case :ets.lookup :genes_to_terms, gene do
-        [] ->
-          :ets.insert :genes_to_terms, {gene, [ term ]}
-        [{_, ts}] ->
-          :ets.insert :genes_to_terms, {gene, [ term | ts ]}
-      end
-    end
-
-    defp filename do
-      Path.expand("./data/hsapiens.GO.ENSG.gmt")
+    def add(table, key, new) when is_list(new) do
+       case Map.has_key?(table, key) do
+         true  -> Map.update! table, key, fn(value) ->
+               new ++ value
+           end
+         false ->
+             Map.put table, key, new
+       end
     end
 
 end

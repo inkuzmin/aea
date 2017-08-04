@@ -1,20 +1,12 @@
 defmodule AEA.OBO do
 
-  def start(:re) do
-    filename |> read_obo
-  end
-  def start() do
-    _terms_to_terms = :ets.new(:terms_to_terms, [:set, :protected, :named_table])
-    filename |> read_obo
+  def start(filename \\ "./data/go.obo") do
+    filename |> Path.expand |> File.read! |> parse
   end
 
-  def read_obo(path) do
-    path |> File.read! |> parse_obo
-  end
-
-  def parse_obo(string) do
+  def parse(string) do
     [ _header | stanzas ] = String.split(string, "\n\n")
-    Enum.each(stanzas, &parse_stanza/1)
+    Enum.reduce(stanzas, &parse_stanza/1)
   end
 
   def parse_stanza(stanza) do
@@ -65,10 +57,6 @@ defmodule AEA.OBO do
       [{_, children}] ->
         :ets.insert :terms_to_terms, {parent, [ child | children ]}
     end
-  end
-
-  def filename do
-    Path.expand("./data/go.obo")
   end
 
 

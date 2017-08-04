@@ -26,6 +26,55 @@ defmodule AEA.Helpers do
         )
     end
 
+    @docs """
+    Map map... map map map! map.
+    map!
+    """
+    def map_to_table(map) do
+      Enum.map map, fn {k, v} ->
+        [k | v]
+      end
+    end
+    def table_to_map(table) do
+      Enum.reduce table, %{}, fn([key | values], acc) ->
+        Map.put acc, key, values
+      end
+    end
+    def table_to_ets(table, name) when is_atom(name) do
+      create_table name
+      Enum.each table, fn ([key | values]) ->
+        :ets.insert name, {key, values}
+      end
+    end
+    def tsf_to_table(filename) do
+      filename |> Path.expand |> File.stream! |> parse_tsf
+    end
+
+    def parse_tsf(lines) do
+      Enum.reduce lines, [], fn(line, acc) ->
+        case line |> String.replace("\n", "") |> String.split("\t", trim: true) do
+          xs -> [ xs | acc ]
+          _  -> acc
+        end
+      end
+    end
+
+
+    def create_table(name) when is_atom(name) do
+      try do
+        :ets.new(name, [:set, :protected, :named_table])
+      rescue
+        _ ->
+          :ets.delete(name)
+          :ets.new(name, [:set, :protected, :named_table])
+      end
+    end
+
+    def save_as_csv(table, filename \\ "test.csv", separator \\ ?\t) do
+      file = File.open!(filename, [:write, :utf8])
+      table |> CSV.encode(separator: separator) |> Enum.each(&IO.write(file, &1))
+    end
+
     def intersect(a, b), do: a -- (a -- b)
 
 
