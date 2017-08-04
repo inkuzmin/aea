@@ -10,6 +10,7 @@ defmodule AEA.GMT do
        AEA.Helpers.save_as_csv(ts_table, "./cache/terms_to_genes.csv")
        AEA.Helpers.save_as_csv(gs_table, "./cache/genes_to_terms.csv")
 
+       {ts, gs}
     end
 
     def parse(lines) do

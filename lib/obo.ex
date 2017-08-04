@@ -1,7 +1,10 @@
 defmodule AEA.OBO do
 
   def start(filename \\ "./data/go.obo") do
-    filename |> Path.expand |> File.read! |> parse
+    children_table = filename |> Path.expand |> File.read! |> parse
+    children_table |> AEA.Helpers.map_to_table |> AEA.Helpers.save_as_csv("./cache/terms_to_terms.csv")
+
+    children_table
   end
 
   def parse(string) do
