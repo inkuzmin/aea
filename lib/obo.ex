@@ -1,10 +1,20 @@
 defmodule AEA.OBO do
 
-  def start(filename \\ "./data/go.obo") do
-    children_table = filename |> Path.expand |> File.read! |> parse
-    children_table |> AEA.Helpers.map_to_table |> AEA.Helpers.save_as_csv("./cache/terms_to_terms.csv")
+  @filename "./data/go.obo"
+  @cache "./cache/terms_to_terms.csv"
 
-    children_table
+  def start_from_cashe(cache \\ @cache) do
+     case File.exists? cache do
+       true -> AEA.Helpers.tsf_to_table(cache) |> AEA.Helpers.table_to_map
+       false -> :error
+     end
+  end
+
+  def start(filename \\ @filename) do
+    terms_to_children = filename |> Path.expand |> File.read! |> parse
+    terms_to_children |> AEA.Helpers.map_to_table |> AEA.Helpers.save_as_csv(@cache)
+
+    terms_to_children
   end
 
   def parse(string) do
