@@ -6,22 +6,26 @@ defmodule AEA.OBO do
 
   def parse(string) do
     [ _header | stanzas ] = String.split(string, "\n\n")
-    Enum.reduce(stanzas, &parse_stanza/1)
+    Enum.reduce(stanzas, %{}, &parse_stanza/2)
   end
 
-  def parse_stanza(stanza) do
+  def parse_stanza(stanza, acc) do
     case String.split(stanza, "\n") do
       [ "[Term]" | tags ] ->
         t = Enum.map(tags, &parse_tag/1)
 
-        if Keyword.get(t, :is_obsolete) != "true" do
-            save_rel Keyword.get(t, :id), Keyword.take(t, [:is_a]), :is_a # is_a values
-            save_rel Keyword.get(t, :id), Keyword.take(t, [:relationship]), :part_of # relationship values
+        case Keyword.get(t, :is_obsolete) != "true" do
+          true ->
+            a = save_rel acc, Keyword.get(t, :id), Keyword.take(t, [:is_a]), :is_a
+            save_rel a, Keyword.get(t, :id), Keyword.take(t, [:relationship]), :part_of
+          false ->
+            acc
         end
+
       _ ->
         IO.puts "Unknown stanza"
+        acc
     end
-
   end
 
   def parse_tag(tag) do
@@ -33,31 +37,36 @@ defmodule AEA.OBO do
     end
   end
 
-  def save_rel(id, parents, :is_a) do
-    Enum.each parents, fn({_,parent}) ->
+  def save_rel(acc, id, parents, :is_a) do
+    Enum.reduce parents, acc, fn({_,parent}, a) ->
       case Regex.run(~r{GO:\d+}, parent) do
-        [ parent_id ] -> upsert parent_id, id # save
-        _ -> IO.puts "Unknown id"
+        [ parent_id ] ->
+          add a, parent_id, [ id ]
+        _ ->
+          IO.puts "Unknown id"
+          a
       end
     end
   end
-  def save_rel(id, parents, :part_of) do
-    Enum.each parents, fn({_,parent}) ->
+  def save_rel(acc, id, parents, :part_of) do
+    Enum.reduce parents, acc, fn({_,parent}, a) ->
       case Regex.run(~r{part_of (GO:\d+)}, parent) do
-        [ _, parent_id ] -> upsert parent_id, id # save
-        _ -> IO.puts "Unknown id"
+        [ _, parent_id ] ->
+           add a, parent_id, [ id ]
+        _ ->
+          IO.puts "Unknown id"
+          a
       end
     end
   end
 
-  def upsert(parent, child) do
-    case :ets.lookup :terms_to_terms, parent do
-      [] ->
-        :ets.insert :terms_to_terms, {parent, [ child ]}
-      [{_, children}] ->
-        :ets.insert :terms_to_terms, {parent, [ child | children ]}
-    end
+  def add(table, key, new) when is_list(new) do
+     case Map.has_key?(table, key) do
+       true  -> Map.update! table, key, fn(value) ->
+             new ++ value
+         end
+       false ->
+           Map.put table, key, new
+     end
   end
-
-
 end
