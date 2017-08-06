@@ -29,13 +29,13 @@ defmodule AEA.Randomize.Worker do
   end
 
   def handle_info(msg, state) do
-    IO.puts "received #{inspect msg}"
+#    IO.puts "received #{inspect msg}"
     {:noreply, state}
   end
 
   def terminate(reason, stats) do
-    IO.puts "server terminated because of #{inspect reason}"
-        inspect stats
+#    IO.puts "server terminated because of #{inspect reason}"
+#        inspect stats
     :ok
   end
 end
