@@ -9,16 +9,17 @@ defmodule AEA do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
-  def put(pid, mtilda_gt) do
-    GenServer.cast(pid, {:put, mtilda_gt})
+  def put(pid, mtilda_gt, iterations) do
+    GenServer.cast(pid, {:put, mtilda_gt, iterations})
   end
 
   def get(pid) do
     GenServer.call(pid, :get)
   end
 
-  def go(pid, genes, term, iterations) do
-    GenServer.cast(pid, {:go, genes, term, iterations})
+#  def go(pid, genes, term, iterations) do
+  def go(pid, all_genes, all_terms, gene_set, term, iterations \\ 10_000) do
+    GenServer.cast(pid, {:go, all_genes, all_terms, gene_set, term, iterations})
   end
 
   # Server Callbacks
@@ -26,22 +27,26 @@ defmodule AEA do
     {:ok, []}
   end
 
-  def handle_cast({:put, mtilda_gt}, state) do
-    {:noreply, [ mtilda_gt | state ]}
+  def handle_cast({:put, mtilda_gt, iterations}, state) do
+    new_state = [ mtilda_gt | state ]
+    if length(new_state) < iterations do
+      {:noreply, new_state}
+    else
+      {:stop, :normal, new_state}
+    end
+
   end
 
-  def handle_cast({:go, genes, term, iterations}, state) do
 
-    {m_gt, m_g, m_t} = determine_ms(genes, term)
+#  def handle_cast({:go, genes, term, iterations}, state) do
+  def handle_cast({:go, all_genes, all_terms, gene_set, term, iterations}, state) do
 
-    gs = AEA.Helpers.get_ets_keys_lazy(:genes_to_terms) |> Enum.to_list
-    ts = AEA.Helpers.get_ets_keys_lazy(:terms_to_genes) |> Enum.to_list
+    {m_gt, m_g, m_t} = determine_ms(gene_set, term)
 
     Enum.each 1..iterations, fn(_) ->
       {:ok, pid} = AEA.Randomize.Worker.start_link
-      AEA.Randomize.Worker.randomize pid, self(), gs, ts, m_g, m_t
+      AEA.Randomize.Worker.randomize pid, self(), all_genes, all_terms, m_g, m_t, iterations
     end
-
 
     {:noreply, state }
   end
@@ -50,10 +55,21 @@ defmodule AEA do
     {:reply, state, state }
   end
 
+  def handle_info(msg, state) do
+#    IO.puts "received #{inspect msg}"
+    {:noreply, state}
+  end
+
+  def terminate(reason, state) do
+#    IO.puts "server terminated because of #{inspect reason}"
+
+    IO.puts "#{inspect state}"
+    :ok
+  end
 
   # Helpers
 
-  def bootstrap do
+  def bootstrap() do
     {terms_to_genes, genes_to_terms, terms, genes} = AEA.GMT.start_from_cache
     terms_to_terms = AEA.Hierarchy.start_from_cache
 
@@ -64,19 +80,22 @@ defmodule AEA do
     genes |> list_to_ets(:genes)
 
     {genes, terms}
+
   end
+
 
 
   def prepare() do
 
-    IO.puts "Building hierarchy..."
-    AEA.OBO.start
+#    IO.puts "Building hierarchy..."
+#    AEA.OBO.start
+#
+#    IO.puts "Building maps"
+#    AEA.GMT.start
+#
+#    IO.puts "Building hierarchy"
+#    AEA.Hierarchy.start
 
-    IO.puts "Building maps"
-    AEA.GMT.start
-
-    IO.puts "Building hierarchy"
-    AEA.Hierarchy.start
 
 #    IO.puts "Building lists"
 #    AEA.Cache.start_link
@@ -89,6 +108,15 @@ defmodule AEA do
 #    p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
 #
 #    {m_gt, mtilda_gts, p}
+  end
+
+  def calculate_aea(all_genes, all_terms, gene_set) do
+
+    Enum.each all_terms, fn(term) ->
+      {:ok, pid} = AEA.start_link
+      AEA.go(pid, all_genes, all_terms, gene_set, term, 10_000)
+    end
+
   end
 
   def calculate_aea_a(all_genes, all_terms, gene_set, term) do

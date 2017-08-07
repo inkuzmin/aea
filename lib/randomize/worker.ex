@@ -9,8 +9,8 @@ defmodule AEA.Randomize.Worker do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
-  def randomize(pid, coord_pid, genes, terms, m_g, m_t) do
-    GenServer.cast(pid, {:randomize, coord_pid, genes, terms, m_g, m_t})
+  def randomize(pid, coord_pid, genes, terms, m_g, m_t, iterations) do
+    GenServer.cast(pid, {:randomize, coord_pid, genes, terms, m_g, m_t, iterations})
   end
 
   # Server Callbacks
@@ -19,11 +19,11 @@ defmodule AEA.Randomize.Worker do
     {:ok, []}
   end
 
-  def handle_cast({:randomize, coord_pid, genes, terms, m_g, m_t}, state) do
+  def handle_cast({:randomize, coord_pid, genes, terms, m_g, m_t, iterations}, state) do
     {g, t} = AEA.randomize(genes, terms, m_g, m_t)
     mtilda_gt = AEA.determine_m_gt(g, t)
 
-    AEA.put coord_pid, mtilda_gt
+    AEA.put coord_pid, mtilda_gt, iterations
 
      {:stop, :normal, state}
   end
