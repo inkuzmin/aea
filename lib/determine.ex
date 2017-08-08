@@ -98,8 +98,12 @@ defmodule AEA.Determine do
         terms = term |> get_terms_of_branch
 
         m_gt = determine_m_gt genes, terms
-        m_t = terms |> get_genes_for_terms |> List.flatten |> length
-        m_g = genes |> get_terms_for_genes |> List.flatten |> length
+
+        # m_t = terms |> get_genes_for_terms |> List.flatten |> length
+        m_t = AEA.Helpers.get_total_number_of_values_for_keys(:genes_to_terms, terms)
+
+        # m_g = genes |> get_terms_for_genes |> List.flatten |> length
+        m_g = AEA.Helpers.get_total_number_of_values_for_keys(:genes_to_terms, genes)
 
         {m_gt, m_g, m_t}
     end
@@ -115,9 +119,7 @@ defmodule AEA.Determine do
     def get_terms_of_branch(term) do
           case :ets.lookup(:terms_to_terms, term) do
               [{ term, terms }] ->
-                  Enum.map terms, &get_terms_of_branch/1
-
-                  [ term | terms ] # TODO: recursively take all children
+                  [ term | terms ]
               _ ->
                   IO.inspect "Parsing error with #{inspect term}"
                   []

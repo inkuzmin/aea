@@ -26,10 +26,6 @@ defmodule AEA.Helpers do
         )
     end
 
-    @docs """
-    Map map... map map map! map.
-    map!
-    """
     def map_to_table(map) do
       Enum.map map, fn {k, v} ->
         [k | v]
@@ -58,7 +54,6 @@ defmodule AEA.Helpers do
       Enum.reduce lines, [], fn(line, acc) ->
         case line |> String.replace("\n", "") |> String.split("\t", trim: true) do
           xs -> [ xs | acc ]
-          _  -> acc
         end
       end
     end
@@ -81,6 +76,17 @@ defmodule AEA.Helpers do
 
     def intersect(a, b), do: a -- (a -- b)
 
+    def get_total_number_of_values_for_keys(table, keys) when is_atom(table) do
+      Enum.reduce keys, 0, fn (key, current) ->
+        case :ets.lookup(table, key) do
+            [{_, values}] -> current + length(values)
+            [] -> current
+            _  ->
+             IO.puts "Another error with #{inspect key}"
+             current
+        end
+      end
+    end
 
      def get_values_for_keys(table, keys) when is_atom(table) do
        Enum.map keys, fn (k) ->
