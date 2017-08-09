@@ -32,7 +32,7 @@ defmodule AEA.Methods.Computational do
     end
 
     def handle_cast({:put, term, p}, {number_of_terms, ps}) do
-        ps = [ {term, p} | ps ]
+        ps = [ [term, p] | ps ]
 
         if length(ps) >= number_of_terms do
 #          Enum.each ps, fn({term, p}) ->

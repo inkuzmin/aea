@@ -105,7 +105,7 @@ defmodule AEA.Determine do
         m_gt = determine_m_gt genes, terms
 
         # m_t = terms |> get_genes_for_terms |> List.flatten |> length
-        m_t = AEA.Helpers.get_total_number_of_values_for_keys(:genes_to_terms, terms)
+        m_t = AEA.Helpers.get_total_number_of_values_for_keys(:terms_to_genes, terms)
 
         # m_g = genes |> get_terms_for_genes |> List.flatten |> length
         m_g = AEA.Helpers.get_total_number_of_values_for_keys(:genes_to_terms, genes)
