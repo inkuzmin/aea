@@ -2,7 +2,7 @@ defmodule AEA.Determine do
 
     use GenServer
 
-    @iterations 100
+    @iterations 1000
 
     # Client API
 
@@ -73,7 +73,7 @@ defmodule AEA.Determine do
     end
 
     def terminate(_reason, _state) do
-      IO.puts "determination"
+#      IO.puts "determination"
       :ok
     end
 

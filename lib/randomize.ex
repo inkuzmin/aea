@@ -33,7 +33,7 @@ defmodule AEA.Randomize do
   end
 
   def terminate(_reason, _stats) do
-    IO.puts "random off"
+#    IO.puts "random off"
 #        inspect stats
     :ok
   end

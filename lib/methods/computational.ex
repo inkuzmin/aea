@@ -35,9 +35,11 @@ defmodule AEA.Methods.Computational do
         ps = [ {term, p} | ps ]
 
         if length(ps) >= number_of_terms do
-          Enum.each ps, fn({term, p}) ->
-            IO.puts "p-val of #{term} = #{p}"
-          end
+#          Enum.each ps, fn({term, p}) ->
+#            IO.puts "p-val of #{term} = #{p}"
+#          end
+
+          AEA.Helpers.save_as_csv ps, "results.csv"
           {:stop, :normal, {number_of_terms, ps}}
         else
           {:noreply, {number_of_terms, ps}}
