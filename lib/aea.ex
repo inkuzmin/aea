@@ -13,21 +13,21 @@ defmodule AEA do
     terms |> list_to_ets(:terms)
     genes |> list_to_ets(:genes)
 
-    {genes, terms}
-
+    :ok
   end
 
   def prepare() do
-#    p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
-#
-#    {m_gt, mtilda_gts, p}
+
+
+# p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
+# {m_gt, mtilda_gts, p}
   end
 
-  def calculate_aea(all_genes, all_terms, gene_set) do
-      Enum.each all_terms, fn(term) ->
-          {:ok, pid} = AEA.Determine.start_link
-          AEA.Determine.go(pid, all_genes, all_terms, gene_set, term, 2)
-      end
+  def calculate_aea(_all_genes, _all_terms, _gene_set) do
+#      Enum.each all_terms, fn(term) ->
+#          {:ok, pid} = AEA.Determine.start_link
+#          AEA.Determine.go(pid, all_genes, all_terms, gene_set, term, 10_000)
+#      end
   end
 
   def calculate_aea_a(all_genes, all_terms, gene_set, term) do
@@ -39,6 +39,8 @@ defmodule AEA do
         acc + AEA.Math.choose(m_t, i) * AEA.Math.choose(m_tot - m_t, m_g - i) / AEA.Math.choose(m_tot, m_g)
     end
   end
+
+
 
 
 end

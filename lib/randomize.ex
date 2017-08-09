@@ -9,8 +9,8 @@ defmodule AEA.Randomize do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
-  def randomize(pid, coord_pid, genes, terms, m_g, m_t, iterations) do
-    GenServer.cast(pid, {:randomize, coord_pid, genes, terms, m_g, m_t, iterations})
+  def randomize(pid, coord_pid, genes, terms, m_g, m_t) do
+    GenServer.cast(pid, {:randomize, coord_pid, genes, terms, m_g, m_t})
   end
 
   # Server Callbacks
@@ -19,12 +19,12 @@ defmodule AEA.Randomize do
     {:ok, []}
   end
 
-  def handle_cast({:randomize, coord_pid, genes, terms, m_g, m_t, iterations}, state) do
+  def handle_cast({:randomize, coord_pid, genes, terms, m_g, m_t}, state) do
     {gs, ts} = randomize(genes, terms, m_g, m_t)
 
-    AEA.Determine.put coord_pid, gs, ts, iterations
+    AEA.Determine.put coord_pid, gs, ts
 
-     {:stop, :normal, state}
+    {:stop, :normal, state}
   end
 
   def handle_info(_msg, state) do
@@ -33,7 +33,7 @@ defmodule AEA.Randomize do
   end
 
   def terminate(_reason, _stats) do
-#    IO.puts "server terminated because of #{inspect reason}"
+    IO.puts "random off"
 #        inspect stats
     :ok
   end

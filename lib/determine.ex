@@ -2,14 +2,16 @@ defmodule AEA.Determine do
 
     use GenServer
 
+    @iterations 100
+
     # Client API
 
     def start_link(opts \\ []) do
       GenServer.start_link(__MODULE__, :ok, opts)
     end
 
-    def put(pid, gs, ts, iterations) do
-      GenServer.cast(pid, {:put, gs, ts, iterations})
+    def put(pid, gs, ts) do
+      GenServer.cast(pid, {:put, gs, ts})
     end
 
     def get(pid) do
@@ -17,43 +19,48 @@ defmodule AEA.Determine do
     end
 
     #  def go(pid, genes, term, iterations) do
-    def go(pid, all_genes, all_terms, gene_set, term, iterations \\ 10_000) do
-      GenServer.cast(pid, {:go, all_genes, all_terms, gene_set, term, iterations})
+    def determine(pid, parent_id, all_genes, all_terms, gene_set, term) do
+      GenServer.cast(pid, {:determine, parent_id, all_genes, all_terms, gene_set, term})
     end
 
 
     # Server Callbacks
 
     def init(:ok) do
-      {:ok, []}
+      { :ok, {0, "", 0, []} }
     end
 
-    def handle_cast({:put, gs, ts, iterations}, state) do
-      mtilda_gt = determine_m_gt(gs, ts)
-
-      new_state = [ mtilda_gt | state ]
-      if length(new_state) < iterations do
-        {:noreply, new_state}
-      else
-        {:stop, :normal, new_state}
-      end
-    end
-
-
-    #  def handle_cast({:go, genes, term, iterations}, state) do
-    def handle_cast({:go, all_genes, all_terms, gene_set, term, iterations}, state) do
-
+    def handle_cast({:determine, parent_id, all_genes, all_terms, gene_set, term}, {_parent_id, _term, _m_gt, mtilda_gts}) do
       {m_gt, m_g, m_t} = determine_ms(gene_set, term)
 
       if m_gt > 0 do
-          Enum.each 1..iterations, fn(_) ->
+          Enum.each 1..@iterations, fn(_) ->
             {:ok, pid} = AEA.Randomize.start_link
-            AEA.Randomize.randomize pid, self(), all_genes, all_terms, m_g, m_t, iterations
+            AEA.Randomize.randomize pid, self(), all_genes, all_terms, m_g, m_t
           end
+
+          {:noreply, {parent_id, term, m_gt, mtilda_gts}}
       else
-          0
+          AEA.Methods.Computational.put(parent_id, term, 1)
+
+          {:stop, :normal, {parent_id, term, m_gt, mtilda_gts}}
       end
-        {:noreply, state }
+    end
+
+    def handle_cast({:put, gs, ts}, {parent_id, term, m_gt, mtilda_gts}) do
+      mtilda_gt = determine_m_gt(gs, ts)
+
+      mtilda_gts = [ mtilda_gt | mtilda_gts ]
+
+      if length(mtilda_gts) < @iterations do
+        {:noreply,  {parent_id, term, m_gt, mtilda_gts}}
+      else
+        p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
+
+        AEA.Methods.Computational.put(parent_id, term, p)
+
+        {:stop, :normal, {parent_id, term, m_gt, mtilda_gts}}
+      end
     end
 
     def handle_call(:get, _from, state) do
@@ -65,10 +72,8 @@ defmodule AEA.Determine do
       {:noreply, state}
     end
 
-    def terminate(_reason, state) do
-    #    IO.puts "server terminated because of #{inspect reason}"
-
-      IO.puts "#{inspect state}"
+    def terminate(_reason, _state) do
+      IO.puts "determination"
       :ok
     end
 
