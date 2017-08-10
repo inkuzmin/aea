@@ -41,7 +41,7 @@ defmodule AEA.Determine do
 
           {:noreply, {parent_id, term, m_gt, mtilda_gts}}
       else
-          AEA.Methods.Computational.put(parent_id, term, 1)
+          AEA.Computational.put(parent_id, term, 1)
 
           {:stop, :normal, {parent_id, term, m_gt, mtilda_gts}}
       end
@@ -57,7 +57,7 @@ defmodule AEA.Determine do
       else
         p = ((Enum.filter mtilda_gts, fn(mtilda_gt) -> mtilda_gt >= m_gt  end) |> length) / length(mtilda_gts)
 
-        AEA.Methods.Computational.put(parent_id, term, p)
+        AEA.Computational.put(parent_id, term, p)
 
         {:stop, :normal, {parent_id, term, m_gt, mtilda_gts}}
       end

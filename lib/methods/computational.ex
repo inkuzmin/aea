@@ -1,4 +1,4 @@
-defmodule AEA.Methods.Computational do
+defmodule AEA.Computational do
     use GenServer
 
     # Client API
@@ -46,5 +46,13 @@ defmodule AEA.Methods.Computational do
         end
     end
 
+    def handle_info(msg, state) do
+      IO.puts "received unknown #{inspect msg}"
+      {:noreply, state}
+    end
 
+    def terminate(_reason, _state) do
+      IO.puts "Done!"
+      :ok
+    end
 end

@@ -1,4 +1,4 @@
-defmodule AEA.Methods.Analytical do
+defmodule AEA.Analytical do
 
     use GenServer
 
@@ -7,13 +7,22 @@ defmodule AEA.Methods.Analytical do
       GenServer.start_link(__MODULE__, :ok, opts)
     end
 
+    def put(pid, term, p) do
+      GenServer.cast(pid, {:put, term, p})
+    end
+
+    def go(pid, gene_set) do
+      GenServer.cast(pid, {:go, gene_set})
+    end
+
+
     # Server Callbacks
     def init(:ok) do
-      {:ok, []}
+      { :ok, {0, []} }
     end
 
     # Helpers
-    def calculate(gene_set) do
+    def handle_cast({:go, gene_set}, {_number_of_terms, _ps}) do
       [{:all, all_terms}] = :ets.lookup :terms, :all
       [{:all, all_genes}] = :ets.lookup :genes, :all
 
@@ -21,17 +30,34 @@ defmodule AEA.Methods.Analytical do
 
 
 
-      ps = Enum.map all_terms, fn(term) ->
-        {m_gt, m_g, m_t} = AEA.Determine.determine_ms gene_set, term
+      Enum.each all_terms, fn(term) ->
 
-        if m_gt > 0 do
-            [term, AEA.Math.pval(m_gt, m_g, m_t, m_tot)]
-        else
-            [term, 1]
-        end
+        {:ok, pid} = AEA.Calculate.start_link
+        AEA.Calculate.calculate pid, self(), gene_set, term, m_tot
       end
 
-      AEA.Helpers.save_as_csv ps, "results.csv"
+
+      {:noreply, {length(all_terms), []}}
     end
 
+    def handle_cast({:put, term, p}, {number_of_terms, ps}) do
+        ps = [ [term, p] | ps ]
+
+        if length(ps) >= number_of_terms do
+          AEA.Helpers.save_as_csv ps, "results.csv"
+          {:stop, :normal, {number_of_terms, ps}}
+        else
+          {:noreply, {number_of_terms, ps}}
+        end
+    end
+
+    def handle_info(msg, state) do
+      IO.puts "received unknown #{inspect msg}"
+      {:noreply, state}
+    end
+
+    def terminate(_reason, _state) do
+      IO.puts "Done!"
+      :ok
+    end
 end
